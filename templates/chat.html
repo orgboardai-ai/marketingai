@@ -1,0 +1,1662 @@
+{% extends 'base.html' %}
+{% block title %}Чат — MarketingAI{% endblock %}
+{% block content %}
+  {# Ті самі правила, що contacts.html: фон сторінки — body bg-surface-main; контейнер max-w-6xl; картки border-line-soft + shadow-soft #}
+  <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
+    <header class="mb-10 text-center sm:text-left">
+      <h1 class="text-3xl font-bold tracking-tight text-brand-deep sm:text-4xl">Чат з AI-асистентом</h1>
+    </header>
+
+    <!-- Степер: як картки на сторінці Контакти -->
+    <div class="mb-10 rounded-2xl border border-line-soft bg-white p-6 shadow-soft sm:p-8">
+      <h2 class="text-xl font-bold text-brand-deep">Етапи роботи з AI-асистентом</h2>
+      <div id="stage-bar" class="w-full overflow-x-auto pb-2 pt-4"></div>
+    </div>
+
+    {# items-start: ліва колонка не розтягується на висоту правого контенту #}
+    <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 lg:gap-10">
+      <aside class="w-full self-start lg:col-span-4">
+        <div class="flex flex-col rounded-2xl border border-line-soft bg-white p-6 shadow-soft sm:p-8">
+          <h2 class="mb-3 text-xl font-bold text-brand-deep">Етапи</h2>
+          <div id="stage-list" class="max-h-[min(70vh,28rem)] space-y-2 overflow-y-auto overscroll-y-contain pr-1"></div>
+        </div>
+      </aside>
+
+      <div class="min-w-0 lg:col-span-8" id="chat-container">
+        <!-- Етап 1: Інструкція (показується лише на цьому етапі) -->
+        <div id="stage-instruction-panel" class="mb-6 hidden">
+          <div class="rounded-2xl border border-line-soft bg-white p-6 shadow-soft sm:p-8">
+            <h2 class="text-2xl font-bold tracking-tight text-brand-deep sm:text-3xl">Інструкція та постановка цілі</h2>
+            <p class="mt-3 text-lg text-brand-deep/90">
+              Перегляньте відео, ознайомтесь з правилами і сформулюйте головну ціль разом з MarketingAI.
+            </p>
+
+            <!-- Вкладки як пункти nav: rounded-lg px-3 py-1.5, активна — surface-card/60 + ring (див. _setTabButtonState) -->
+            <nav class="mt-6 flex flex-wrap gap-2" aria-label="Кроки інструкції">
+              {# Без DaisyUI btn — інакше жовтий hover #}
+              <button id="instr-tab-video" type="button" class="instr-tab">1. Відео</button>
+              <button id="instr-tab-rules" type="button" class="instr-tab">2. Правила</button>
+              <button id="instr-tab-goal" type="button" class="instr-tab">3. Чат (ціль)</button>
+              <button id="instr-tab-schedule" type="button" class="instr-tab">4. Розклад</button>
+            </nav>
+
+            {# Один рівень з карткою інструкції: без сірого «колодязя» і без вкладених білих карток #}
+            <div class="marketingai-instr-panels mt-6">
+            <!-- TAB 1: Відео -->
+            <div id="instr-panel-video" class="instr-panel overflow-hidden">
+              <div class="flex items-center gap-3 border-b border-line-soft pb-4">
+                <div class="w-9 h-9 rounded-lg bg-interactive/15 flex items-center justify-center text-brand-deep">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M6.5 5.5A1.5 1.5 0 0 0 5 7v6a1.5 1.5 0 0 0 1.5 1.5h7A1.5 1.5 0 0 0 15 13V7a1.5 1.5 0 0 0-1.5-1.5h-7Zm2.2 3.18a1 1 0 0 1 1.52-.85l3 1.82a1 1 0 0 1 0 1.7l-3 1.82A1 1 0 0 1 8.7 12.5V8.68Z"/>
+                  </svg>
+                </div>
+                <p class="font-semibold text-brand-deep">Відеопояснення — як працює програма</p>
+              </div>
+              <div class="pt-4">
+                <p class="text-sm font-bold text-brand-deep">Крок 1 з 4 — перегляньте відео</p>
+                <div class="w-full aspect-video mt-3">
+                  <iframe
+                    class="h-full w-full rounded-lg border border-line-soft"
+                    src="https://www.youtube.com/embed/{{ instruction_youtube_id|default:'M7lc1UVf-VE' }}?rel=0"
+                    title="Відеопояснення"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen>
+                  </iframe>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 2: Правила -->
+            <div id="instr-panel-rules" class="instr-panel hidden overflow-hidden">
+              <div class="flex items-center gap-3 border-b border-line-soft pb-4">
+                <div class="w-9 h-9 rounded-lg bg-action-primary/25 flex items-center justify-center text-brand-deep">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7.41a2 2 0 0 0-.59-1.41l-2.41-2.41A2 2 0 0 0 11.59 3H6Zm5 1.5V6a1 1 0 0 0 1 1h2.5L11 3.5Z"/>
+                  </svg>
+                </div>
+                <p class="font-semibold text-brand-deep">Правила та умови програми</p>
+              </div>
+              <div class="pt-4">
+                <p class="text-sm font-bold text-brand-deep">Крок 2 з 4 — ознайомтесь з правилами</p>
+
+                <a
+                  id="rules-link"
+                  href="{{ rules_url|default:'/rules' }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="mt-3 block rounded-lg border border-line-soft bg-surface-main/30 px-4 py-3 transition-colors hover:border-interactive">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                      <div class="flex h-9 w-9 items-center justify-center rounded-lg border border-line-soft bg-surface-main/25 text-neutral-text">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                          <path d="M4 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V7.5a.5.5 0 0 0-.15-.35l-4-4A.5.5 0 0 0 10.5 3H4Zm6 1.5V7a1 1 0 0 0 1 1h3.5L10 3.5Z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="text-sm font-semibold text-brand-deep">Правила роботи з програмою</p>
+                      </div>
+                    </div>
+                    <span class="text-neutral-text">→</span>
+                  </div>
+                </a>
+
+                <label class="mt-3 flex cursor-pointer select-none items-center gap-3 rounded-lg border border-line-soft px-4 py-3">
+                  <input id="rules-accept" type="checkbox" class="checkbox border-line-soft checked:bg-brand-deep checked:border-brand-deep" />
+                  <span class="text-sm text-brand-deep">
+                    Я ознайомився і погоджуюсь із правилами та умовами програми <span class="font-semibold">MarketingAI</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <!-- TAB 3: Чат (постановка цілі) -->
+            <div id="instr-panel-goal" class="instr-panel hidden overflow-hidden">
+              <div class="flex items-center gap-3 border-b border-line-soft pb-4">
+                <div class="w-9 h-9 rounded-lg bg-surface-card/50 flex items-center justify-center text-brand-deep">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M2 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H8l-3.3 2.48A1 1 0 0 1 3 15.68V14a2 2 0 0 1-1-1.73V5Z"/>
+                  </svg>
+                </div>
+                <p class="font-semibold text-brand-deep">Постановка цілі в чаті</p>
+              </div>
+              <div class="pt-4">
+                <p class="text-sm font-bold text-brand-deep">Крок 3 з 4 — сформулюйте ціль з AI</p>
+                <p class="text-sm text-neutral-text mt-2">
+                  Нижче — чат з MarketingAI. Він допоможе вам оформити чітку, вимірювану ціль. Коли ціль буде зафіксована в системі, відкриється наступний крок.
+                </p>
+                <div id="instruction-chat-host" class="mt-4"></div>
+              </div>
+            </div>
+
+            <!-- TAB 4: Розклад -->
+            <div id="instr-panel-schedule" class="instr-panel hidden overflow-hidden">
+              <div class="flex items-center gap-3 border-b border-line-soft pb-4">
+                <div class="w-9 h-9 rounded-lg bg-interactive/15 flex items-center justify-center text-brand-deep">
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M6 2a1 1 0 0 0-1 1v1H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1V3a1 1 0 1 0-2 0v1H7V3a1 1 0 0 0-1-1Zm10 7H4v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9Z"/>
+                  </svg>
+                </div>
+                <p class="font-semibold text-brand-deep">Розклад</p>
+              </div>
+              <div class="pt-4">
+                <p class="text-sm font-bold text-brand-deep">Крок 4 з 4 — перегляньте розклад</p>
+                <p class="text-sm text-neutral-text mt-2">
+                  Після того як ціль сформована, перегляньте відео про розклад і створіть свій розклад.
+                </p>
+                <div class="w-full aspect-video mt-3">
+                  <iframe
+                    class="h-full w-full rounded-lg border border-line-soft"
+                    src="https://www.youtube.com/embed/9buvCcxGS6o?si=c6rruIYiZAngpyN3&amp;controls=0"
+                    title="YouTube video player"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allowfullscreen>
+                  </iframe>
+                </div>
+
+                <div class="mt-5 rounded-lg border border-line-soft/80 bg-surface-main/35 px-4 py-3">
+                  <p class="text-sm font-semibold text-brand-deep">Коротко про розклад</p>
+                  <p class="text-sm text-neutral-text mt-1">
+                    Оберіть <span class="font-semibold">12,5 год</span> на тиждень для роботи з ШІ. Це допоможе зробити прогрес стабільним і передбачуваним.
+                  </p>
+                </div>
+
+                {# Додавання розкладу: одна рамка, без другої білої «картки» всередині картки інструкції #}
+                <div class="mt-5 overflow-hidden rounded-xl border border-line-soft shadow-sm">
+                  <!-- Header -->
+                  <div class="px-4 py-4 sm:px-5 bg-gradient-to-r from-brand-deep to-brand-muted text-white">
+                    <div class="flex items-center justify-between gap-4">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center border border-white/20">
+                          <svg class="w-5 h-5 text-action-primary" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                            <path d="M6 2a1 1 0 0 0-1 1v1H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1V3a1 1 0 1 0-2 0v1H7V3a1 1 0 0 0-1-1Zm10 7H4v6a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9Z"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <p class="text-lg font-bold leading-tight">Розклад</p>
+                          <p id="schedule-total-subtitle" class="text-xs text-white/70">всього: 0.0г</p>
+                        </div>
+                      </div>
+
+                      <div class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                        <div class="flex items-center gap-2">
+                          <span id="schedule-lock-icon" class="text-action-primary" aria-hidden="true">🔒</span>
+                          <span id="schedule-progress-text" class="text-sm font-semibold text-white">0.0 / 12.5</span>
+                        </div>
+                        <button id="schedule-apply-btn" type="button" class="btn btn-sm rounded-md border-0 bg-brand-deep font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50" disabled>
+                          ЗБЕРЕГТИ
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Grid -->
+                  <div class="bg-surface-main/25">
+                    <div id="schedule-error-box" class="hidden px-4 pt-3 text-sm text-red-600"></div>
+                    <div id="schedule-success-box" class="hidden px-4 pt-3 text-sm text-brand-deep font-medium"></div>
+                    <div id="schedule-grid-wrap" class="mt-3 px-3 pb-3">
+                      <div class="overflow-hidden rounded-lg border border-line-soft bg-white">
+                        <div class="max-h-[520px] overflow-y-auto overflow-x-hidden">
+                          <p class="px-3 pt-2 text-[11px] text-neutral-text leading-snug">
+                            Затисніть ліву кнопку миші або палець і протягніть по сітці — виділиться прямокутник слотів (кілька днів і годин одним рухом).
+                          </p>
+                          <div id="schedule-grid-host" class="w-full touch-none select-none"></div>
+                        </div>
+                        <div class="flex justify-end bg-surface-main/25 px-3 py-2">
+                          <button id="schedule-clear-btn" type="button" class="text-xs font-semibold text-red-500 hover:text-red-600">
+                            Очистити
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <input type="hidden" id="schedule-selected-slots-input" value="" />
+                </div>
+
+                <div id="ready-to-start" class="mt-5 hidden rounded-xl border border-dashed border-interactive/35 bg-surface-main/25 px-5 py-10 text-center">
+                  <div class="text-3xl">🚀</div>
+                  <p class="mt-4 text-2xl font-bold text-brand-deep">Все готово до старту</p>
+                  <p class="mt-2 text-sm text-neutral-text">
+                    Ціль зафіксована · Правила прийнято · Розклад узгоджено
+                  </p>
+                  <button id="start-journey-btn-hero" type="button" class="btn mt-6 w-full rounded-md border-0 bg-brand-deep px-10 font-semibold text-white hover:brightness-110 sm:w-auto">
+                    Почати шлях до “<span id="ready-goal-title" class="font-semibold">…</span>”
+                    <span class="ml-2">→</span>
+                  </button>
+                </div>
+
+                <div id="goal-start-controls" class="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <input
+                    id="goal-title"
+                    type="text"
+                    class="input input-bordered flex-1 rounded-md border-line-soft bg-white text-brand-deep/90 placeholder:text-neutral-text/60 focus:border-brand-deep focus:outline-none focus:ring-2 focus:ring-interactive/40"
+                    placeholder="Назва цілі"
+                    value="" />
+                  <button id="start-journey-btn" type="button" class="btn rounded-md border-0 bg-brand-deep font-semibold text-white hover:brightness-110">
+                    Почати шлях
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            </div>
+            <!-- Legacy hook: JS expects this id for step-4 visibility -->
+            <div id="goal-after-panel" class="hidden"></div>
+          </div>
+        </div>
+
+        <div id="default-chat-host" class="flex w-full flex-col overflow-hidden rounded-2xl border border-line-soft bg-white shadow-soft" style="height: 460px; max-height: calc(100vh - 24px);">
+          {% if chat_allow_new_conversation %}
+          <div class="flex shrink-0 flex-wrap items-center gap-2 border-b border-line-soft bg-surface-main/20 px-3 py-2">
+            <button type="button" id="chat-new-conversation-btn" class="btn btn-sm ml-auto border border-line-soft bg-white font-medium text-brand-deep hover:bg-slate-100">
+              Нова розмова
+            </button>
+          </div>
+          {% endif %}
+          <div id="chat-messages" class="min-h-0 flex-1 space-y-4 overflow-y-auto bg-surface-main/25 p-4">
+            <!-- Повідомлення підставляються через JS -->
+          </div>
+          <div class="border-t border-line-soft bg-white p-4">
+            <form id="chat-form" class="flex gap-2">
+              <input type="hidden" id="conversation-id" name="conversation_id" value="">
+              <input type="text" id="message-input" name="text" placeholder="Напишіть повідомлення..." class="input input-bordered flex-1 rounded-xl border border-line-soft bg-white px-4 py-2.5 text-brand-deep/90 placeholder:text-neutral-text/60 focus:border-brand-deep focus:outline-none focus:ring-2 focus:ring-interactive/40" />
+              <button type="submit" class="btn rounded-xl border-0 ds-btn-cta bg-action-primary text-brand-deep">Надіслати</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    const chatMessages = document.getElementById('chat-messages');
+    const chatForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('message-input');
+    const conversationIdInput = document.getElementById('conversation-id');
+    const chatNewConversationBtn = document.getElementById('chat-new-conversation-btn');
+    const stageBar = document.getElementById('stage-bar');
+    const stageList = document.getElementById('stage-list');
+    const CSRF_TOKEN = '{{ csrf_token }}';
+    const POLL_INTERVAL_MS = 2000;
+    const stageInstructionPanel = document.getElementById('stage-instruction-panel');
+    const rulesAccept = document.getElementById('rules-accept');
+    const goalAfterPanel = document.getElementById('goal-after-panel');
+    const goalTitleInput = document.getElementById('goal-title');
+    const startJourneyBtn = document.getElementById('start-journey-btn');
+    const readyToStart = document.getElementById('ready-to-start');
+    const startJourneyBtnHero = document.getElementById('start-journey-btn-hero');
+    const readyGoalTitle = document.getElementById('ready-goal-title');
+    const goalStartControls = document.getElementById('goal-start-controls');
+    const scheduleTotalPill = document.getElementById('schedule-total-pill');
+    const scheduleSlotsPill = document.getElementById('schedule-slots-pill');
+    const scheduleStatusPill = document.getElementById('schedule-status-pill');
+    const scheduleTotalSubtitle = document.getElementById('schedule-total-subtitle');
+    const scheduleProgressText = document.getElementById('schedule-progress-text');
+    const scheduleLockIcon = document.getElementById('schedule-lock-icon');
+    const scheduleErrorBox = document.getElementById('schedule-error-box');
+    const scheduleSuccessBox = document.getElementById('schedule-success-box');
+    const scheduleGridHost = document.getElementById('schedule-grid-host');
+    const scheduleClearBtn = document.getElementById('schedule-clear-btn');
+    const scheduleApplyBtn = document.getElementById('schedule-apply-btn');
+    const scheduleSelectedSlotsInput = document.getElementById('schedule-selected-slots-input');
+    const instrTabVideo = document.getElementById('instr-tab-video');
+    const instrTabRules = document.getElementById('instr-tab-rules');
+    const instrTabGoal = document.getElementById('instr-tab-goal');
+    const instrTabSchedule = document.getElementById('instr-tab-schedule');
+    const instrPanelVideo = document.getElementById('instr-panel-video');
+    const instrPanelRules = document.getElementById('instr-panel-rules');
+    const instrPanelGoal = document.getElementById('instr-panel-goal');
+    const instrPanelSchedule = document.getElementById('instr-panel-schedule');
+    const instructionChatHost = document.getElementById('instruction-chat-host');
+    const defaultChatHost = document.getElementById('default-chat-host');
+    const STAGES = [
+      'Інструкція',
+      'Продукт',
+      'Унікальна торгова пропозиція',
+      'Цільова аудиторія',
+      'Лінії просування',
+      'Успішні дії',
+      'Воронки',
+      'Стратегія та запуск',
+      'Аналіз'
+    ];
+    /* Етапи з номерами 3–9 (індекси 2…8) — завжди заблоковані (замок), без переходу */
+    const FIRST_LOCKED_STAGE_INDEX = 2;
+    const MAX_INTERACTIVE_STAGE_INDEX = FIRST_LOCKED_STAGE_INDEX - 1;
+    const LOCK_SVG =
+      '<svg class="h-4 w-4 sm:h-5 sm:w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">' +
+      '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>' +
+      '</svg>';
+    function isStageIndexLocked(idx) {
+      return idx >= FIRST_LOCKED_STAGE_INDEX;
+    }
+
+    function clampStageIndex(n) {
+      const x = typeof n === 'number' && !Number.isNaN(n) ? Math.floor(n) : 0;
+      return Math.max(0, Math.min(x, MAX_INTERACTIVE_STAGE_INDEX));
+    }
+
+    const STAGE_STORAGE_KEY = 'marketingai_stage_progress_v1';
+    const RULES_ACCEPT_KEY = 'marketingai_rules_accept_v1';
+    const GOAL_TITLE_KEY = 'marketingai_goal_title_v1';
+    const GOAL_CONFIRMED_KEY = 'marketingai_goal_confirmed_v1';
+    const SCHEDULE_CONFIRMED_KEY = 'marketingai_schedule_confirmed_v1';
+    const SCHEDULE_SLOTS_KEY = 'marketingai_schedule_slots_v1';
+    const INSTR_TAB_KEY = 'marketingai_instruction_tab_v1';
+    let lastMessageId = 0;
+    let pollTimer = null;
+    const appendedIds = new Set();
+    let currentStageIndex = 0;
+    let _lastMetaSync = 0;
+
+    function loadStageProgress() {
+      try {
+        const raw = localStorage.getItem(STAGE_STORAGE_KEY);
+        if (!raw) return 0;
+        const parsed = parseInt(raw, 10);
+        if (Number.isNaN(parsed)) return 0;
+        return clampStageIndex(parsed);
+      } catch (e) {
+        return 0;
+      }
+    }
+
+    function saveStageProgress() {
+      try {
+        localStorage.setItem(STAGE_STORAGE_KEY, String(currentStageIndex));
+      } catch (e) {}
+    }
+
+    function isInstructionStage() {
+      return currentStageIndex === 0;
+    }
+
+    function loadBool(key, defaultValue) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw === null) return !!defaultValue;
+        return raw === '1' || raw === 'true';
+      } catch (e) {
+        return !!defaultValue;
+      }
+    }
+
+    function saveBool(key, value) {
+      try {
+        localStorage.setItem(key, value ? '1' : '0');
+      } catch (e) {}
+    }
+
+    function loadString(key, defaultValue) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw === null ? (defaultValue || '') : String(raw);
+      } catch (e) {
+        return defaultValue || '';
+      }
+    }
+
+    function saveString(key, value) {
+      try {
+        localStorage.setItem(key, String(value || ''));
+      } catch (e) {}
+    }
+
+    function setActiveInstructionTab(tabId) {
+      try { localStorage.setItem(INSTR_TAB_KEY, tabId); } catch (e) {}
+      updateInstructionUI();
+    }
+
+    function getActiveInstructionTab() {
+      try {
+        const raw = localStorage.getItem(INSTR_TAB_KEY);
+        return raw || 'video';
+      } catch (e) {
+        return 'video';
+      }
+    }
+
+    function _setTabButtonState(btn, isActive, isDisabled) {
+      if (!btn) return;
+      btn.disabled = !!isDisabled;
+      /* Активна — як «Чат/Ціни» у nav; неактивна — рамка + тінь, щоб відділялась від сусідів і фону */
+      var base =
+        'instr-tab inline-flex min-h-[2.5rem] cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm box-border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive focus-visible:ring-offset-1 ';
+      if (isDisabled) {
+        btn.className =
+          base +
+          'cursor-not-allowed border border-dashed border-line-soft bg-surface-main/25 font-normal text-neutral-text opacity-60 hover:text-neutral-text';
+        return;
+      }
+      if (isActive) {
+        btn.className =
+          base +
+          'border-0 font-semibold text-brand-deep bg-surface-card/60 ring-1 ring-line-soft hover:bg-surface-card/80 hover:text-brand-deep';
+        return;
+      }
+      btn.className =
+        base +
+        'border border-line-soft bg-white font-normal text-neutral-text shadow-sm hover:border-interactive/50 hover:text-brand-deep hover:shadow';
+    }
+
+    function _setPanelVisible(panel, isVisible) {
+      if (!panel) return;
+      if (isVisible) panel.classList.remove('hidden');
+      else panel.classList.add('hidden');
+    }
+
+    function adjustChatHeight() {
+      if (!defaultChatHost) return;
+      // Стабільна висота від viewport (не залежить від scroll-позиції сторінки).
+      const viewportH = window.innerHeight || document.documentElement.clientHeight || 900;
+      const target = Math.round(viewportH * 0.58);
+      const clamped = Math.max(360, Math.min(620, target));
+      defaultChatHost.style.height = clamped + 'px';
+    }
+
+    function scrollChatToBottom() {
+      if (!chatMessages) return;
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function updateInstructionUI() {
+      if (!stageInstructionPanel) return;
+
+      if (isInstructionStage()) stageInstructionPanel.classList.remove('hidden');
+      else stageInstructionPanel.classList.add('hidden');
+
+      const accepted = rulesAccept ? !!rulesAccept.checked : true;
+      const shouldBlockChat = isInstructionStage() && !accepted;
+      messageInput.disabled = shouldBlockChat;
+
+      const submitBtn = chatForm ? chatForm.querySelector('button[type="submit"]') : null;
+      if (submitBtn) submitBtn.disabled = shouldBlockChat;
+
+      if (messageInput) {
+        if (shouldBlockChat) messageInput.placeholder = 'Спочатку погодьтесь із правилами та умовами програми';
+        else messageInput.placeholder = 'Напишіть повідомлення...';
+      }
+
+      const goalConfirmed = loadBool(GOAL_CONFIRMED_KEY, false);
+      const scheduleConfirmed = loadBool(SCHEDULE_CONFIRMED_KEY, false);
+      const canStartJourney = accepted && goalConfirmed && scheduleConfirmed;
+      // goalAfterPanel — legacy hook; actual UI is instrPanelSchedule availability
+      if (goalAfterPanel) goalAfterPanel.classList.add('hidden');
+
+      if (startJourneyBtn && goalTitleInput) {
+        const title = (goalTitleInput.value || '').trim();
+        startJourneyBtn.textContent = title ? ('Почати шлях до “' + title + '”') : 'Почати шлях';
+      }
+      if (startJourneyBtn) {
+        startJourneyBtn.disabled = !canStartJourney;
+      }
+      if (startJourneyBtnHero && goalTitleInput) {
+        const title = (goalTitleInput.value || '').trim();
+        // Текст кнопки всередині блоку "Все готово до старту" (назва цілі підставляється окремо).
+        if (readyGoalTitle) readyGoalTitle.textContent = title || '...';
+      }
+      if (startJourneyBtnHero) {
+        startJourneyBtnHero.disabled = !canStartJourney;
+      }
+      if (readyToStart) {
+        if (goalConfirmed && scheduleConfirmed) readyToStart.classList.remove('hidden');
+        else readyToStart.classList.add('hidden');
+      }
+      if (goalStartControls) {
+        if (goalConfirmed && scheduleConfirmed) goalStartControls.classList.add('hidden');
+        else goalStartControls.classList.remove('hidden');
+      }
+
+      // Tabs: visibility + gating
+      const active = getActiveInstructionTab();
+      const canUseGoalTab = accepted;
+      const canUseScheduleTab = accepted && goalConfirmed;
+
+      const resolvedActive =
+        (active === 'schedule' && !canUseScheduleTab) ? (canUseGoalTab ? 'goal' : 'rules') :
+        (active === 'goal' && !canUseGoalTab) ? 'rules' :
+        active;
+
+      if (resolvedActive !== active) {
+        try { localStorage.setItem(INSTR_TAB_KEY, resolvedActive); } catch (e) {}
+      }
+
+      _setTabButtonState(instrTabVideo, resolvedActive === 'video', false);
+      _setTabButtonState(instrTabRules, resolvedActive === 'rules', false);
+      _setTabButtonState(instrTabGoal, resolvedActive === 'goal', !canUseGoalTab);
+      _setTabButtonState(instrTabSchedule, resolvedActive === 'schedule', !canUseScheduleTab);
+
+      _setPanelVisible(instrPanelVideo, resolvedActive === 'video');
+      _setPanelVisible(instrPanelRules, resolvedActive === 'rules');
+      _setPanelVisible(instrPanelGoal, resolvedActive === 'goal');
+      _setPanelVisible(instrPanelSchedule, resolvedActive === 'schedule');
+
+      // Move chat window under the goal text (only on Instruction stage + Goal tab)
+      if (defaultChatHost && instructionChatHost) {
+        const shouldEmbedChat = isInstructionStage() && resolvedActive === 'goal';
+        if (shouldEmbedChat) {
+          if (defaultChatHost.parentElement !== instructionChatHost) {
+            instructionChatHost.appendChild(defaultChatHost);
+          }
+          defaultChatHost.classList.remove('hidden');
+        } else {
+          // На етапі "Інструкція" чат не показуємо поза вкладкою 3.
+          if (isInstructionStage()) {
+            defaultChatHost.classList.add('hidden');
+          } else {
+            defaultChatHost.classList.remove('hidden');
+          }
+
+          // Put chat back where it was (right column bottom)
+          // The original container is `#chat-container` direct child after instruction panel.
+          const chatContainer = document.getElementById('chat-container');
+          if (chatContainer && defaultChatHost.parentElement !== chatContainer) {
+            chatContainer.appendChild(defaultChatHost);
+          }
+        }
+      }
+      adjustChatHeight();
+    }
+
+    function renderStageBar() {
+      stageBar.innerHTML = '';
+      const row = document.createElement('div');
+      row.className = 'flex items-start justify-between min-w-max md:min-w-0 md:w-full gap-0 px-1';
+
+      STAGES.forEach(function (stageTitle, idx) {
+        const locked = isStageIndexLocked(idx);
+        const isDone = !locked && idx < currentStageIndex;
+        const isCurrent = !locked && idx === currentStageIndex;
+        const isFuture = !locked && idx > currentStageIndex;
+
+        const col = document.createElement('div');
+        col.className = 'flex flex-col items-center flex-1 min-w-[4.5rem] max-w-[8rem]';
+
+        /* Підпис «Етап N»; замок лише в колі (без дубля поруч із номером) */
+        const topLabel = document.createElement('span');
+        topLabel.className =
+          'mb-2 text-center text-[11px] font-medium leading-tight px-0.5 sm:text-xs';
+        if (locked) {
+          topLabel.className += ' text-neutral-text';
+        } else if (isDone) {
+          topLabel.className += ' text-brand-deep';
+        } else if (isCurrent) {
+          topLabel.className += ' font-semibold text-brand-deep';
+        } else {
+          topLabel.className += ' text-neutral-text';
+        }
+        topLabel.textContent = 'Етап ' + (idx + 1);
+        col.appendChild(topLabel);
+
+        const rowCircles = document.createElement('div');
+        rowCircles.className = 'flex items-center w-full';
+
+        const leftSeg = document.createElement('div');
+        leftSeg.className = 'h-0.5 flex-1 min-w-[8px] rounded-full';
+        if (idx === 0) {
+          leftSeg.className += ' opacity-0';
+        } else {
+          leftSeg.className += currentStageIndex > idx - 1 ? ' bg-brand-deep/90' : ' bg-line-soft';
+        }
+
+        const circleBtn = document.createElement('button');
+        circleBtn.type = 'button';
+        circleBtn.className =
+          'relative z-10 flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-interactive focus-visible:ring-offset-2';
+        if (locked) {
+          circleBtn.setAttribute('aria-label', 'Етап ' + (idx + 1) + ': ' + stageTitle + ' (недоступно)');
+          circleBtn.className +=
+            ' cursor-not-allowed border border-line-soft bg-surface-main/30 text-neutral-text opacity-90';
+          circleBtn.disabled = true;
+          circleBtn.innerHTML = LOCK_SVG;
+        } else {
+          circleBtn.setAttribute('aria-label', 'Етап ' + (idx + 1) + ': ' + stageTitle);
+          if (isDone) {
+            circleBtn.className += ' bg-brand-deep/90 text-white shadow-soft';
+            circleBtn.innerHTML =
+              '<svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>';
+          } else if (isCurrent) {
+            circleBtn.className +=
+              ' border-0 bg-brand-deep/90 text-white font-semibold text-sm shadow-soft ring-1 ring-white/25';
+            circleBtn.textContent = String(idx + 1);
+          } else {
+            circleBtn.className +=
+              ' border border-line-soft bg-white text-neutral-text text-sm font-medium hover:text-brand-deep';
+            circleBtn.textContent = String(idx + 1);
+          }
+          circleBtn.addEventListener('click', function () {
+            currentStageIndex = idx;
+            saveStageProgress();
+            renderStagesUI();
+            syncStageToServer();
+          });
+        }
+
+        const rightSeg = document.createElement('div');
+        rightSeg.className = 'h-0.5 flex-1 min-w-[8px] rounded-full';
+        if (idx === STAGES.length - 1) {
+          rightSeg.className += ' opacity-0';
+        } else {
+          rightSeg.className += currentStageIndex > idx ? ' bg-brand-deep/90' : ' bg-line-soft';
+        }
+
+        rowCircles.appendChild(leftSeg);
+        rowCircles.appendChild(circleBtn);
+        rowCircles.appendChild(rightSeg);
+
+        const bottomTitle = document.createElement('span');
+        bottomTitle.className = 'mt-2 text-center text-[11px] sm:text-sm leading-snug px-0.5';
+        if (locked) {
+          bottomTitle.className += ' text-neutral-text';
+        } else if (isDone) {
+          bottomTitle.className += ' text-brand-deep';
+        } else if (isCurrent) {
+          bottomTitle.className += ' font-semibold text-brand-deep';
+        } else {
+          bottomTitle.className += ' text-neutral-text';
+        }
+        bottomTitle.textContent = stageTitle;
+
+        col.appendChild(rowCircles);
+        col.appendChild(bottomTitle);
+        row.appendChild(col);
+      });
+
+      stageBar.appendChild(row);
+    }
+
+    function renderStageList() {
+      stageList.innerHTML = '';
+      STAGES.forEach(function (title, idx) {
+        if (isStageIndexLocked(idx)) {
+          const row = document.createElement('div');
+          row.className =
+            'flex w-full cursor-not-allowed items-center justify-between gap-2 rounded-lg border border-line-soft bg-surface-main/20 p-3 text-left text-sm opacity-90';
+          row.setAttribute('role', 'group');
+          row.setAttribute(
+            'aria-label',
+            'Етап ' + (idx + 1) + ': ' + title + ' (недоступно)'
+          );
+          const left = document.createElement('div');
+          left.className = 'flex min-w-0 flex-1 items-center gap-2';
+          left.innerHTML =
+            '<span class="shrink-0 text-neutral-text" aria-hidden="true">' +
+            LOCK_SVG +
+            '</span><p class="truncate text-sm text-neutral-text">' +
+            (idx + 1) +
+            '. ' +
+            escapeHtml(title) +
+            '</p>';
+          const badge = document.createElement('span');
+          badge.className =
+            'shrink-0 rounded-lg border border-line-soft bg-white px-2 py-1 text-xs text-neutral-text';
+          badge.textContent = 'Скоро';
+          row.appendChild(left);
+          row.appendChild(badge);
+          stageList.appendChild(row);
+          return;
+        }
+
+        const item = document.createElement('button');
+        item.type = 'button';
+        const blueActive =
+          'w-full rounded-lg border-0 bg-brand-deep/90 p-3 text-left text-white shadow-soft ring-1 ring-white/15 flex items-center justify-between text-sm transition-colors ';
+        const whiteFuture =
+          'w-full rounded-lg border border-line-soft bg-white p-3 text-left shadow-sm flex items-center justify-between text-sm text-neutral-text transition-colors hover:bg-surface-main/25 hover:text-brand-deep ';
+        if (idx < currentStageIndex || idx === currentStageIndex) {
+          item.className = blueActive;
+        } else {
+          item.className = whiteFuture;
+        }
+        item.addEventListener('click', function () {
+          currentStageIndex = idx;
+          saveStageProgress();
+          renderStagesUI();
+          syncStageToServer();
+        });
+
+        const left = document.createElement('div');
+        if (idx < currentStageIndex || idx === currentStageIndex) {
+          left.innerHTML =
+            '<p class="text-sm font-semibold text-white">' +
+            (idx + 1) +
+            '. ' +
+            escapeHtml(title) +
+            '</p>';
+        } else {
+          left.innerHTML =
+            '<p class="text-sm font-medium text-brand-deep">' +
+            (idx + 1) +
+            '. ' +
+            escapeHtml(title) +
+            '</p>';
+        }
+
+        const badge = document.createElement('span');
+        badge.className = 'shrink-0 rounded-lg px-2 py-1 text-xs';
+        if (idx < currentStageIndex) {
+          badge.className += ' bg-white/15 text-white';
+          badge.textContent = 'Пройдено';
+        } else if (idx === currentStageIndex) {
+          badge.className += ' bg-white/25 font-semibold text-white';
+          badge.textContent = 'Поточний';
+        } else {
+          badge.className += ' bg-surface-main/25 text-neutral-text';
+          badge.textContent = 'Далі';
+        }
+        item.appendChild(left);
+        item.appendChild(badge);
+        stageList.appendChild(item);
+      });
+    }
+
+    function renderStagesUI() {
+      renderStageBar();
+      renderStageList();
+      updateInstructionUI();
+    }
+
+    function getCsrfToken() {
+      if (CSRF_TOKEN) return CSRF_TOKEN;
+      const m = document.cookie.match(/\bcsrftoken=([^;]+)/);
+      return m ? m[1].trim() : '';
+    }
+
+    function getConversationId() {
+      const id = conversationIdInput.value.trim();
+      return id ? parseInt(id, 10) : null;
+    }
+
+    function setConversationId(id) {
+      conversationIdInput.value = id;
+    }
+
+    function appendMessage(msg) {
+      if (appendedIds.has(msg.id)) return;
+      appendedIds.add(msg.id);
+      const div = document.createElement('div');
+      div.className = msg.sender === 'user' ? 'chat chat-end' : 'chat chat-start';
+      const label = msg.sender === 'user' ? 'Ви' : (msg.sender === 'ai' ? 'AI' : 'Агент');
+      let bubbleClass = msg.sender === 'user' ? 'chat-bubble chat-bubble-primary' : 'chat-bubble chat-bubble-secondary';
+      const t = (msg.text || '').trim();
+      if (msg.sender === 'ai' && (t.startsWith('Ваша ціль зафіксована') || t.startsWith('✅ Ваша ціль зафіксована'))) {
+        bubbleClass += ' !bg-white border border-line-soft shadow-sm text-brand-deep/90';
+      }
+      div.innerHTML =
+        '<div class="chat-header mb-1 text-sm text-neutral-text">' +
+        label +
+        ' · ' +
+        new Date(msg.created_at).toLocaleTimeString('uk') +
+        '</div><div class="' +
+        bubbleClass +
+        '">' +
+        escapeHtml(msg.text) +
+        '</div>';
+      chatMessages.appendChild(div);
+      scrollChatToBottom();
+      if (msg.id > lastMessageId) lastMessageId = msg.id;
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function showError(msg) {
+      var el = document.getElementById('chat-error');
+      if (!el) {
+        el = document.createElement('p');
+        el.id = 'chat-error';
+        el.className = 'mt-2 text-sm text-red-600';
+        chatForm.appendChild(el);
+      }
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function clearError() {
+      var el = document.getElementById('chat-error');
+      if (el) el.classList.add('hidden');
+    }
+
+    function syncStageFromServer() {
+      const cid = getConversationId();
+      if (!cid) return;
+      fetch('/api/chat/conversation/' + cid + '/', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (typeof data.stage_index === 'number') {
+            currentStageIndex = clampStageIndex(data.stage_index);
+            saveStageProgress();
+            // goal state (з сервера → localStorage → UI)
+            if (typeof data.goal_title === 'string') {
+              saveString(GOAL_TITLE_KEY, data.goal_title);
+              if (goalTitleInput) goalTitleInput.value = data.goal_title;
+            }
+            if (typeof data.goal_confirmed === 'boolean') {
+              saveBool(GOAL_CONFIRMED_KEY, data.goal_confirmed);
+              if (data.goal_confirmed) {
+                // auto переход на вкладку 4
+                try { localStorage.setItem(INSTR_TAB_KEY, 'schedule'); } catch (e) {}
+              }
+            }
+            renderStagesUI();
+          }
+        })
+        .catch(function () {});
+    }
+
+    function syncStageToServer() {
+      const cid = getConversationId();
+      if (!cid) return;
+      fetch('/api/chat/conversation/' + cid + '/', {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRFToken': getCsrfToken(),
+        },
+        body: JSON.stringify({ stage_index: currentStageIndex }),
+      }).catch(function () {});
+    }
+
+    function reloadAllMessages() {
+      const cid = getConversationId();
+      if (!cid) return Promise.resolve(0);
+      chatMessages.innerHTML = '';
+      appendedIds.clear();
+      lastMessageId = 0;
+      return fetch('/api/chat/messages/?conversation_id=' + cid, {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' },
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (messages) {
+          if (Array.isArray(messages)) messages.forEach(appendMessage);
+          scrollChatToBottom();
+          return Array.isArray(messages) ? messages.length : 0;
+        })
+        .catch(function () { return 0; });
+    }
+
+    function sendChatOpened() {
+      const cid = getConversationId();
+      if (!cid) return Promise.resolve();
+      var key = 'marketingai_chat_opened_' + cid;
+      if (sessionStorage.getItem(key)) return Promise.resolve();
+      return fetch('/api/chat/message/', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRFToken': getCsrfToken(),
+        },
+        body: JSON.stringify({
+          event: 'chat_opened',
+          conversation_id: cid,
+          stage_index: currentStageIndex,
+        }),
+      })
+        .then(function (r) {
+          if (r.ok) sessionStorage.setItem(key, '1');
+        })
+        .catch(function () {});
+    }
+
+    function loadMessages() {
+      const cid = getConversationId();
+      if (!cid) return;
+      const url = '/api/chat/messages/?conversation_id=' + cid + (lastMessageId ? '&after=' + lastMessageId : '');
+      fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(messages => {
+          var hadNewAi = false;
+          if (Array.isArray(messages)) {
+            messages.forEach(function (m) {
+              if (!appendedIds.has(m.id)) {
+                appendMessage(m);
+                if (m.sender === 'ai') hadNewAi = true;
+              }
+            });
+          }
+          if (hadNewAi && Date.now() - _lastMetaSync > 1500) {
+            _lastMetaSync = Date.now();
+            syncStageFromServer();
+          }
+        })
+        .catch(function() {});
+    }
+
+    function startPolling() {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(loadMessages, POLL_INTERVAL_MS);
+    }
+
+    chatForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      clearError();
+      if (isInstructionStage() && rulesAccept && !rulesAccept.checked) {
+        showError('Потрібно погодитись із правилами та умовами програми перед початком чату.');
+        updateInstructionUI();
+        return;
+      }
+      const text = messageInput.value.trim();
+      if (!text) return;
+      const cid = getConversationId();
+      const body = { text: text, event: 'user_message', stage_index: currentStageIndex };
+      if (cid) body.conversation_id = cid;
+      fetch('/api/chat/message/', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRFToken': getCsrfToken(),
+        },
+        body: JSON.stringify(body),
+      })
+        .then(function (r) {
+          return r.json().then(function (data) { return { ok: r.ok, status: r.status, data: data }; });
+        })
+        .then(function (res) {
+          if (!res.ok) {
+            var msg = 'Помилка збереження. Спробуйте оновити сторінку та увійти знову.';
+            if (res.data) {
+              if (typeof res.data.detail === 'string') msg = res.data.detail;
+              else if (res.data.detail && typeof res.data.detail === 'object') msg = JSON.stringify(res.data.detail);
+            }
+            showError(msg);
+            return;
+          }
+          var data = res.data;
+          if (data.conversation_id) setConversationId(data.conversation_id);
+          messageInput.value = '';
+          appendMessage({ id: data.message_id, sender: 'user', text: text, created_at: new Date().toISOString() });
+          startPolling();
+        })
+        .catch(function (err) {
+          console.error(err);
+          showError('Помилка з\'єднання. Перевірте мережу та спробуйте ще раз.');
+        });
+    });
+
+    function startChatSession() {
+      reloadAllMessages().then(function (count) {
+        if (count === 0) sendChatOpened();
+        startPolling();
+      });
+    }
+
+    /* Нова розмова для тесту: новий Conversation — порожня історія в БД і в payload для n8n */
+    function startNewChatConversation() {
+      if (
+        !window.confirm(
+          'Почати нову розмову? У чаті буде чиста історія для тесту агента. Попередня розмова залишиться в базі даних.'
+        )
+      ) {
+        return;
+      }
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      clearError();
+      chatMessages.innerHTML = '';
+      appendedIds.clear();
+      lastMessageId = 0;
+      conversationIdInput.value = '';
+      fetch('/api/chat/message/', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRFToken': getCsrfToken(),
+        },
+        body: JSON.stringify({ event: 'chat_opened', stage_index: 0 }),
+      })
+        .then(function (r) {
+          return r.json().then(function (data) {
+            return { ok: r.ok, data: data };
+          });
+        })
+        .then(function (res) {
+          if (!res.ok) {
+            var d = res.data && res.data.detail;
+            showError(typeof d === 'string' ? d : 'Не вдалося створити розмову.');
+            return;
+          }
+          var nid = res.data && res.data.conversation_id;
+          if (!nid) {
+            showError('Сервер не повернув id розмови.');
+            return;
+          }
+          setConversationId(nid);
+          try {
+            sessionStorage.setItem('marketingai_chat_opened_' + nid, '1');
+          } catch (eSs) {}
+          currentStageIndex = 0;
+          saveStageProgress();
+          saveString(GOAL_TITLE_KEY, '');
+          saveBool(GOAL_CONFIRMED_KEY, false);
+          if (goalTitleInput) goalTitleInput.value = '';
+          try {
+            localStorage.setItem(INSTR_TAB_KEY, 'video');
+          } catch (eTab) {}
+          setActiveInstructionTab('video');
+          renderStagesUI();
+          return reloadAllMessages().then(function () {
+            startPolling();
+            syncStageFromServer();
+          });
+        })
+        .catch(function () {
+          showError('Помилка зʼєднання.');
+        });
+    }
+
+    // Історія з БД після перезавантаження / відновлення мережі; синхронізація етапу з сервера
+    (function init() {
+      window.addEventListener('resize', adjustChatHeight);
+
+      if (chatNewConversationBtn) {
+        chatNewConversationBtn.addEventListener('click', function () {
+          startNewChatConversation();
+        });
+      }
+
+      if (instrTabVideo) instrTabVideo.addEventListener('click', function () { setActiveInstructionTab('video'); });
+      if (instrTabRules) instrTabRules.addEventListener('click', function () { setActiveInstructionTab('rules'); });
+      if (instrTabGoal) instrTabGoal.addEventListener('click', function () { setActiveInstructionTab('goal'); });
+      if (instrTabSchedule) instrTabSchedule.addEventListener('click', function () { setActiveInstructionTab('schedule'); });
+
+      if (rulesAccept) {
+        rulesAccept.checked = loadBool(RULES_ACCEPT_KEY, false);
+        rulesAccept.addEventListener('change', function () {
+          saveBool(RULES_ACCEPT_KEY, !!rulesAccept.checked);
+          if (rulesAccept.checked && getActiveInstructionTab() === 'rules') {
+            // М’який UX: після прийняття правил можна перейти до чату одним кліком.
+            setActiveInstructionTab('goal');
+          }
+          updateInstructionUI();
+        });
+      }
+
+      if (goalTitleInput) {
+        goalTitleInput.value = loadString(GOAL_TITLE_KEY, '');
+        goalTitleInput.addEventListener('input', function () {
+          saveString(GOAL_TITLE_KEY, goalTitleInput.value);
+          updateInstructionUI();
+        });
+      }
+
+      // --- UI вибору розкладу (крок 4 з 4) ---
+      // Локальні ключі (узгоджено/слоти) зберігаємо в localStorage, щоб стан переживав перезавантаження.
+      if (scheduleGridHost && scheduleApplyBtn && scheduleClearBtn) {
+        const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
+        const SLOT_MINUTES = 30;
+        const START_HOUR = 6;
+        const END_HOUR = 22; // 24:00 = 00:00 наступного дня (не включно як старт години)
+        const TARGET_HOURS = 12.5;
+        const TARGET_SLOTS = (TARGET_HOURS * 60) / SLOT_MINUTES; // 25
+
+        let selectedSlots = new Set();
+        let isDragging = false;
+        let dragMode = null; // 'add' | 'remove'
+        let dragLimitShown = false;
+        let scheduleNeedsConfirm = false;
+        let scheduleConfirmedCache = loadBool(SCHEDULE_CONFIRMED_KEY, false);
+
+        function formatTime(hour, minute) {
+          return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        }
+
+        function keyForCell(dayIndex, timeStr) {
+          return `${dayIndex}-${timeStr}`;
+        }
+
+        // Прямокутне виділення: якір + кінцева клітинка (швидкий рух не пропускає комірки — elementFromPoint).
+        function parseScheduleKey(key) {
+          const dash = key.indexOf('-');
+          return { day: parseInt(key.slice(0, dash), 10), timeStr: key.slice(dash + 1) };
+        }
+
+        function timeStrToMinutes(ts) {
+          const parts = ts.split(':');
+          return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+        }
+
+        function keysInRectangle(keyA, keyB) {
+          const pa = parseScheduleKey(keyA);
+          const pb = parseScheduleKey(keyB);
+          const dMin = Math.min(pa.day, pb.day);
+          const dMax = Math.max(pa.day, pb.day);
+          const tMin = Math.min(timeStrToMinutes(pa.timeStr), timeStrToMinutes(pb.timeStr));
+          const tMax = Math.max(timeStrToMinutes(pa.timeStr), timeStrToMinutes(pb.timeStr));
+          const out = [];
+          for (let h = START_HOUR; h < END_HOUR; h++) {
+            for (let m = 0; m < 60; m += SLOT_MINUTES) {
+              const mm = h * 60 + m;
+              if (mm < tMin || mm > tMax) continue;
+              for (let d = dMin; d <= dMax; d++) {
+                out.push(keyForCell(d, formatTime(h, m)));
+              }
+            }
+          }
+          return out;
+        }
+
+        let dragSnapshot = null;
+
+        function applyRangeSelection(anchorKey, endKey) {
+          selectedSlots = new Set(dragSnapshot);
+          const keys = keysInRectangle(anchorKey, endKey);
+          if (dragMode === 'add') {
+            for (let i = 0; i < keys.length; i++) {
+              if (selectedSlots.size >= TARGET_SLOTS) {
+                if (!dragLimitShown && i < keys.length) {
+                  dragLimitShown = true;
+                  showScheduleError('Досягнуто ліміт 12,5 год. Щоб додати ще слот, спершу приберіть один із вибраних.');
+                }
+                break;
+              }
+              selectedSlots.add(keys[i]);
+            }
+          } else {
+            for (let i = 0; i < keys.length; i++) {
+              selectedSlots.delete(keys[i]);
+            }
+          }
+        }
+
+        function paintScheduleCells() {
+          scheduleGridHost.querySelectorAll('td[data-key]').forEach(function (td) {
+            const k = td.dataset.key;
+            const on = selectedSlots.has(k);
+            if (on) {
+              td.classList.add('marketingai-slot-on');
+            } else {
+              td.classList.remove('marketingai-slot-on');
+            }
+          });
+        }
+
+        let dragAnchorKey = null;
+        let dragRangeEndKey = null;
+        let scheduleDragRaf = null;
+        let pendingRangeEndKey = null;
+
+        function showScheduleSuccess(msg) {
+          if (!scheduleSuccessBox) return;
+          hideScheduleError();
+          scheduleSuccessBox.textContent = msg;
+          scheduleSuccessBox.classList.remove('hidden');
+        }
+
+        function hideScheduleSuccess() {
+          if (!scheduleSuccessBox) return;
+          scheduleSuccessBox.textContent = '';
+          scheduleSuccessBox.classList.add('hidden');
+        }
+
+        function showScheduleError(msg) {
+          if (!scheduleErrorBox) return;
+          hideScheduleSuccess();
+          scheduleErrorBox.textContent = msg;
+          scheduleErrorBox.classList.remove('hidden');
+        }
+
+        function hideScheduleError() {
+          if (!scheduleErrorBox) return;
+          scheduleErrorBox.textContent = '';
+          scheduleErrorBox.classList.add('hidden');
+        }
+
+        // Помилка OAuth у query (редірект з бекенду)
+        try {
+          var calParams = new URLSearchParams(window.location.search);
+          if (calParams.get('calendar') === 'error') {
+            setActiveInstructionTab('schedule');
+            var reason = calParams.get('reason') || '';
+            var errMsg;
+            if (reason === 'token') {
+              errMsg = 'Google не прийняв обмін коду (redirect_uri). У Google Cloud → OAuth Client Authorized redirect URIs має бути ТОЧНО такий самий рядок, як GOOGLE_REDIRECT_URI у .env (включно з https і шляхом /api/calendar/oauth/callback/). Для ngrok додайте NGROK_HOST або TRUST_X_FORWARDED_SSL=1.';
+            } else if (reason === 'google_denied') {
+              errMsg = 'Доступ у Google скасовано або акаунт не в списку тестових користувачів (OAuth consent screen → Test users).';
+            } else if (reason === 'state') {
+              errMsg = 'Не знайдено сесію OAuth (рідко після оновлення кешу). Спробуйте SAVE ще раз. Якщо кілька процесів Django — налаштуйте Redis як CACHES у settings.';
+            } else if (reason === 'missing') {
+              errMsg = 'Google повернув callback без коду. Спробуйте SAVE ще раз.';
+            } else if (reason === 'user') {
+              errMsg = 'Користувач не знайдений. Увійдіть на сайт знову і повторіть SAVE.';
+            } else {
+              errMsg = 'Не вдалося завершити вхід у Google Calendar. Перевірте GOOGLE_REDIRECT_URI, NGROK_HOST або TRUST_X_FORWARDED_SSL=1, і Authorized redirect URI в Google Cloud. Спробуйте SAVE ще раз.';
+            }
+            showScheduleError(errMsg);
+            if (window.history && window.history.replaceState) {
+              window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+            }
+          }
+        } catch (eCal) {}
+
+        function updateScheduleStats() {
+          const slotsCount = selectedSlots.size;
+          const hoursCount = (slotsCount * SLOT_MINUTES) / 60;
+          const remainingHours = TARGET_HOURS - hoursCount;
+
+          const ok = slotsCount === TARGET_SLOTS;
+
+          if (scheduleTotalSubtitle) scheduleTotalSubtitle.textContent = `всього: ${hoursCount.toFixed(1)}г`;
+          if (scheduleProgressText) scheduleProgressText.textContent = `${hoursCount.toFixed(1)} / ${TARGET_HOURS}`;
+          if (scheduleLockIcon) scheduleLockIcon.textContent = ok ? '🔓' : '🔒';
+
+          if (scheduleApplyBtn) {
+            scheduleApplyBtn.disabled = !ok;
+          }
+
+          if (scheduleSelectedSlotsInput) {
+            scheduleSelectedSlotsInput.value = JSON.stringify(Array.from(selectedSlots).sort());
+          }
+
+          if (scheduleTotalPill) scheduleTotalPill.textContent = `Обрано: ${hoursCount.toFixed(1)} / ${TARGET_HOURS} год`;
+          if (scheduleSlotsPill) scheduleSlotsPill.textContent = `Слотів: ${slotsCount} / ${TARGET_SLOTS}`;
+          if (scheduleStatusPill) scheduleStatusPill.textContent = ok ? 'Готово' : `Потрібно ще: ${Math.max(0, remainingHours).toFixed(1)} год`;
+        }
+
+        function syncSelectionToStorage(updateConfirmed) {
+          // Зберігаємо поточний вибір слотів.
+          try {
+            localStorage.setItem(SCHEDULE_SLOTS_KEY, JSON.stringify(Array.from(selectedSlots)));
+          } catch (e) {}
+
+          if (updateConfirmed) {
+            saveBool(SCHEDULE_CONFIRMED_KEY, selectedSlots.size === TARGET_SLOTS);
+            scheduleConfirmedCache = selectedSlots.size === TARGET_SLOTS;
+          }
+        }
+
+        function renderScheduleGrid() {
+          scheduleGridHost.innerHTML = '';
+
+          // Однакова висота рядка сітки (час + дні); збігається з h-8 комірок tbody.
+          const SCHEDULE_ROW_H = 'h-8 min-h-[2rem] max-h-[2rem] align-middle box-border p-0';
+
+          const table = document.createElement('table');
+          table.className = 'w-full table-fixed border-collapse';
+
+          const thead = document.createElement('thead');
+          const headerRow = document.createElement('tr');
+
+          const thTime = document.createElement('th');
+          thTime.textContent = 'ЧАС';
+          thTime.className =
+            'sticky top-0 z-20 bg-surface-main/25 border border-line-soft text-[10px] font-bold text-neutral-text w-[52px] ' +
+            SCHEDULE_ROW_H +
+            ' text-center leading-none';
+          headerRow.appendChild(thTime);
+
+          for (let d = 0; d < DAYS.length; d++) {
+            const th = document.createElement('th');
+            th.textContent = DAYS[d].toUpperCase();
+            th.className =
+              'sticky top-0 z-10 bg-surface-main/25 border border-line-soft text-[10px] font-bold text-brand-deep text-center leading-none ' +
+              SCHEDULE_ROW_H;
+            headerRow.appendChild(th);
+          }
+
+          thead.appendChild(headerRow);
+          table.appendChild(thead);
+
+          const tbody = document.createElement('tbody');
+          for (let h = START_HOUR; h < END_HOUR; h++) {
+            for (let m = 0; m < 60; m += SLOT_MINUTES) {
+              const timeStr = formatTime(h, m);
+
+              const tr = document.createElement('tr');
+
+              const th = document.createElement('th');
+              // Підпис часу лише на повній годині; порожні рядки — невидимий заповнювач для стабільної висоти.
+              th.textContent = m === 0 ? `${h}:00` : '\u00a0';
+              th.className =
+                'bg-white border border-line-soft text-[10px] font-bold text-brand-deep text-center leading-none whitespace-nowrap ' +
+                SCHEDULE_ROW_H +
+                ' w-[52px]';
+
+              tr.appendChild(th);
+
+              for (let dayIndex = 0; dayIndex < DAYS.length; dayIndex++) {
+                const key = keyForCell(dayIndex, timeStr);
+                const td = document.createElement('td');
+
+                td.dataset.key = key;
+                td.className =
+                  'marketingai-slot-cell border border-line-soft bg-white cursor-pointer select-none ' +
+                  SCHEDULE_ROW_H +
+                  ' overflow-hidden';
+
+                if (selectedSlots.has(key)) {
+                  td.classList.add('marketingai-slot-on');
+                }
+
+                tr.appendChild(td);
+              }
+
+              tbody.appendChild(tr);
+            }
+          }
+
+          table.appendChild(tbody);
+          scheduleGridHost.appendChild(table);
+        }
+
+        function scheduleOnPointerMove(e) {
+          if (!isDragging || dragAnchorKey == null) return;
+          e.preventDefault();
+          const el = document.elementFromPoint(e.clientX, e.clientY);
+          if (!el || !el.closest) return;
+          const td = el.closest('td[data-key]');
+          if (!td || !scheduleGridHost.contains(td)) return;
+          const key = td.dataset.key;
+          if (key === dragRangeEndKey) return;
+          dragRangeEndKey = key;
+          pendingRangeEndKey = key;
+          if (scheduleDragRaf != null) return;
+          scheduleDragRaf = window.requestAnimationFrame(function () {
+            scheduleDragRaf = null;
+            if (pendingRangeEndKey == null || dragAnchorKey == null) return;
+            applyRangeSelection(dragAnchorKey, pendingRangeEndKey);
+            paintScheduleCells();
+            updateScheduleStats();
+          });
+        }
+
+        function scheduleOnPointerEnd() {
+          document.removeEventListener('pointermove', scheduleOnPointerMove, { passive: false });
+          document.removeEventListener('pointerup', scheduleOnPointerEnd);
+          document.removeEventListener('pointercancel', scheduleOnPointerEnd);
+          if (scheduleDragRaf != null) {
+            window.cancelAnimationFrame(scheduleDragRaf);
+            scheduleDragRaf = null;
+          }
+          pendingRangeEndKey = null;
+          if (!isDragging) return;
+          isDragging = false;
+          dragMode = null;
+          dragSnapshot = null;
+          dragAnchorKey = null;
+          dragRangeEndKey = null;
+
+          // Якщо користувач змінював підтверджений розклад — потрібно повторне узгодження.
+          if (scheduleNeedsConfirm) {
+            scheduleNeedsConfirm = false;
+            syncSelectionToStorage(false);
+            saveBool(SCHEDULE_CONFIRMED_KEY, false);
+            scheduleConfirmedCache = false;
+            updateInstructionUI();
+          }
+        }
+
+        scheduleGridHost.addEventListener('pointerdown', function (e) {
+          const td = e.target && e.target.closest && e.target.closest('td[data-key]');
+          if (!td || !scheduleGridHost.contains(td)) return;
+          if (e.pointerType === 'mouse' && e.button !== 0) return;
+          e.preventDefault();
+
+          const key = td.dataset.key;
+          dragSnapshot = new Set(selectedSlots);
+          dragMode = dragSnapshot.has(key) ? 'remove' : 'add';
+
+          if (dragMode === 'add' && dragSnapshot.size >= TARGET_SLOTS) {
+            if (!dragLimitShown) {
+              showScheduleError('Досягнуто ліміт 12,5 год. Щоб додати ще слот, спершу приберіть один із вибраних.');
+              dragLimitShown = true;
+            }
+            return;
+          }
+
+          dragLimitShown = false;
+          if (scheduleConfirmedCache) scheduleNeedsConfirm = true;
+          hideScheduleError();
+
+          isDragging = true;
+          dragAnchorKey = key;
+          dragRangeEndKey = key;
+          pendingRangeEndKey = key;
+          applyRangeSelection(dragAnchorKey, dragRangeEndKey);
+          paintScheduleCells();
+          updateScheduleStats();
+
+          document.addEventListener('pointermove', scheduleOnPointerMove, { passive: false });
+          document.addEventListener('pointerup', scheduleOnPointerEnd);
+          document.addEventListener('pointercancel', scheduleOnPointerEnd);
+        });
+
+        scheduleClearBtn.addEventListener('click', () => {
+          selectedSlots.clear();
+          hideScheduleError();
+          saveBool(SCHEDULE_CONFIRMED_KEY, false);
+          scheduleConfirmedCache = false;
+          syncSelectionToStorage(false);
+          updateScheduleStats();
+          updateInstructionUI();
+          // Перерендеримо таблицю, щоб зняти підсвітку.
+          renderScheduleGrid();
+        });
+
+        function scheduleSlotKeysToApiSlots(keys) {
+          const sorted = Array.from(keys).sort();
+          return sorted.map(function (k) {
+            const dash = k.indexOf('-');
+            const dow = parseInt(k.slice(0, dash), 10);
+            const t = k.slice(dash + 1);
+            const parts = t.split(':');
+            const hh = parseInt(parts[0], 10);
+            const mm = parseInt(parts[1], 10);
+            const startM = hh * 60 + mm;
+            const endM = startM + 30;
+            let endH = Math.floor(endM / 60);
+            let endMin = endM % 60;
+            if (endH >= 24) {
+              endH = 0;
+              endMin = 0;
+            }
+            function pad(n) { return String(n).padStart(2, '0'); }
+            return {
+              day_of_week: dow,
+              start_time: pad(hh) + ':' + pad(mm),
+              end_time: pad(endH) + ':' + pad(endMin),
+            };
+          });
+        }
+
+        scheduleApplyBtn.addEventListener('click', () => {
+          if (selectedSlots.size !== TARGET_SLOTS) return;
+
+          hideScheduleError();
+          hideScheduleSuccess();
+          scheduleApplyBtn.disabled = true;
+          scheduleApplyBtn.textContent = 'SAVING...';
+
+          const payload = {
+            slots: scheduleSlotKeysToApiSlots(selectedSlots),
+            goal_title: (goalTitleInput ? (goalTitleInput.value || '').trim() : ''),
+          };
+
+          fetch('/api/calendar/save-schedule/', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-CSRFToken': getCsrfToken(),
+            },
+            body: JSON.stringify(payload),
+          })
+            .then(function (r) { return r.json().then(function (data) { return { ok: r.ok, status: r.status, data: data }; }); })
+            .then(function (res) {
+              if (!res.ok) {
+                const msg = (res.data && res.data.detail) ? res.data.detail : 'Помилка збереження в Google Calendar.';
+                showScheduleError(msg);
+                return;
+              }
+              if (res.data && res.data.auth_required) {
+                return fetch('/api/calendar/oauth/start/', {
+                  credentials: 'same-origin',
+                  headers: { 'Accept': 'application/json' },
+                })
+                  .then(function (r) { return r.json(); })
+                  .then(function (d) {
+                    if (d && d.auth_url) {
+                      try { sessionStorage.setItem('marketingai_pending_calendar_save', '1'); } catch (e) {}
+                      window.location.href = d.auth_url;
+                    } else {
+                      showScheduleError('Не вдалося отримати посилання Google OAuth.');
+                    }
+                  });
+              }
+
+              if (res.data && res.data.status === 'ok') {
+                syncSelectionToStorage(true);
+                hideScheduleError();
+                hideScheduleSuccess();
+                var calMsg = 'Нагадування в Google Calendar успішно додано (щотижневий розклад; суміжні слоти об’єднано в блоки).';
+                if (window.marketingaiToast) {
+                  window.marketingaiToast({ message: calMsg, type: 'success' });
+                } else {
+                  showScheduleSuccess(calMsg);
+                }
+                updateScheduleStats();
+                updateInstructionUI();
+              } else if (res.data && res.data.status === 'partial') {
+                showScheduleError((res.data.errors && res.data.errors.length) ? res.data.errors.join(' ') : 'Часткове збереження.');
+                syncSelectionToStorage(true);
+                updateScheduleStats();
+                updateInstructionUI();
+              } else {
+                showScheduleError((res.data && res.data.detail) ? res.data.detail : 'Неочікувана відповідь сервера. Спробуйте ще раз.');
+              }
+            })
+            .catch(function () {
+              showScheduleError('Помилка з\'єднання. Перевірте мережу та спробуйте ще раз.');
+            })
+            .finally(function () {
+              scheduleApplyBtn.textContent = 'SAVE';
+              updateScheduleStats();
+            });
+        });
+
+        // Завантажуємо збережені слоти (якщо були).
+        try {
+          const rawSlots = localStorage.getItem(SCHEDULE_SLOTS_KEY);
+          if (rawSlots) {
+            const parsed = JSON.parse(rawSlots);
+            if (Array.isArray(parsed)) selectedSlots = new Set(parsed.map(String));
+          }
+        } catch (e) {}
+
+        // Якщо збережено узгодження, але поточний вибір некоректний — скидаємо узгоджено.
+        if (selectedSlots.size !== TARGET_SLOTS && scheduleConfirmedCache) {
+          saveBool(SCHEDULE_CONFIRMED_KEY, false);
+          scheduleConfirmedCache = false;
+        }
+
+        renderScheduleGrid();
+        updateScheduleStats();
+
+        // Після успішного OAuth автоматично повторюємо збереження (користувач вже натиснув SAVE один раз).
+        try {
+          var pAfter = new URLSearchParams(window.location.search);
+          if (pAfter.get('calendar') === 'connected' && sessionStorage.getItem('marketingai_pending_calendar_save') === '1') {
+            sessionStorage.removeItem('marketingai_pending_calendar_save');
+            setActiveInstructionTab('schedule');
+            if (window.history && window.history.replaceState) {
+              window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+            }
+            if (window.marketingaiToast) {
+              window.marketingaiToast({ message: 'Google Calendar підключено.', type: 'success' });
+            }
+            if (selectedSlots.size === TARGET_SLOTS) {
+              scheduleApplyBtn.click();
+            } else {
+              showScheduleError('Google Calendar підключено. Оберіть 12,5 год на сітці і натисніть SAVE.');
+            }
+          }
+        } catch (ePending) {}
+      }
+
+      if (startJourneyBtn) {
+        startJourneyBtn.addEventListener('click', function () {
+          const title = goalTitleInput ? (goalTitleInput.value || '').trim() : '';
+          // Візуальний етап: поки що без бекенду для переходу.
+          alert(title ? ('Починаємо шлях до: ' + title) : 'Починаємо шлях.');
+        });
+      }
+      if (startJourneyBtnHero) {
+        startJourneyBtnHero.addEventListener('click', function () {
+          const title = goalTitleInput ? (goalTitleInput.value || '').trim() : '';
+          alert(title ? ('Починаємо шлях до: ' + title) : 'Починаємо шлях.');
+        });
+      }
+
+      currentStageIndex = loadStageProgress();
+      renderStagesUI();
+      adjustChatHeight();
+      const cid = getConversationId();
+      if (cid) {
+        fetch('/api/chat/conversation/' + cid + '/', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (typeof data.stage_index === 'number') {
+              currentStageIndex = clampStageIndex(data.stage_index);
+              saveStageProgress();
+              renderStagesUI();
+            }
+          })
+          .catch(function () {})
+          .finally(function () {
+            startChatSession();
+          });
+        return;
+      }
+      fetch('/api/chat/conversations/', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (list) {
+          if (Array.isArray(list) && list.length > 0) {
+            var c = list[0];
+            setConversationId(c.id);
+            currentStageIndex = clampStageIndex(c.stage_index || 0);
+            saveStageProgress();
+            renderStagesUI();
+            startChatSession();
+            return null;
+          }
+          return fetch('/api/chat/message/', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-CSRFToken': getCsrfToken(),
+            },
+            body: JSON.stringify({ event: 'chat_opened', stage_index: currentStageIndex }),
+          }).then(function (r) { return r.json(); });
+        })
+        .then(function (data) {
+          if (data && data.conversation_id) {
+            setConversationId(data.conversation_id);
+            sessionStorage.setItem('marketingai_chat_opened_' + data.conversation_id, '1');
+            startChatSession();
+          }
+        })
+        .catch(function () {});
+    })();
+  </script>
+{% endblock %}

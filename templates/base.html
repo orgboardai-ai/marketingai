@@ -1,0 +1,219 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}MarketingAI{% endblock %}</title>
+  <style>
+    @keyframes marketingai-toast-in {
+      from { opacity: 0; transform: translateX(0.75rem); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .marketingai-toast-animate { animation: marketingai-toast-in 0.28s ease-out forwards; }
+    /* Дизайн-система: CTA — жовтий фон + BRAND-DEEP; hover — трохи темніший жовтий (не сірий), без тіні */
+    .ds-btn-cta {
+      background-color: #f9cd1d;
+      color: #0f4482;
+      font-weight: 600;
+      transition: background-color 0.15s ease;
+    }
+    .ds-btn-cta:hover {
+      background-color: #e6b919 !important;
+      box-shadow: none !important;
+    }
+    /* DaisyUI додає тінь кнопкам на hover — прибираємо */
+    .btn:hover,
+    .btn:active {
+      box-shadow: none !important;
+    }
+    .ds-btn-cta:focus-visible {
+      outline: 2px solid #739bd1;
+      outline-offset: 2px;
+    }
+    /* Сітка розкладу (chat.html): вибраний слот — BRAND-DEEP, hover вільної — напівпрозорий SURFACE-CARD */
+    .marketingai-slot-cell {
+      background-color: #ffffff;
+    }
+    .marketingai-slot-cell:hover:not(.marketingai-slot-on) {
+      background-color: #f1f5f9;
+    }
+    .marketingai-slot-on {
+      background-color: #0f4482 !important;
+    }
+    /* Вкладки інструкції на чаті: без фону/обводки від DaisyUI button */
+    button.instr-tab {
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    /* Чат: користувач — заливка rgb(15 68 130 / 0.9) + білий текст; AI/агент — текст тим самим кольором на світлому фоні */
+    .chat.chat-end .chat-bubble-primary {
+      background-color: rgb(15 68 130 / 0.9) !important;
+      color: #ffffff !important;
+      border-color: transparent !important;
+    }
+    .chat.chat-start .chat-bubble-secondary {
+      background-color: #ffffff !important;
+      color: rgb(15 68 130 / 0.9) !important;
+      /* BORDER-SOFT (як border-line-soft у шаблонах) */
+      border: 1px solid #cbd5e1 !important;
+    }
+    /* Футер: другорядні посилання — білий 70%; hover/focus/active — білий + тонке підкреслення (без плашок) */
+    .marketingai-footer-link {
+      display: inline-block;
+      color: rgba(255, 255, 255, 0.7);
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid transparent;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+    .marketingai-footer-link:hover,
+    .marketingai-footer-link:focus-visible {
+      color: #ffffff;
+      border-bottom-color: #ffffff;
+      outline: none;
+    }
+    .marketingai-footer-link[aria-current='page'] {
+      color: #ffffff;
+      border-bottom-color: #ffffff;
+    }
+  </style>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            action: { primary: '#f9cd1d' },
+            brand: { deep: '#0f4482', muted: '#5873a1' },
+            interactive: '#739bd1',
+            surface: { main: '#e6eaef', card: '#aec4e4' },
+            neutral: { text: '#78797a' },
+            line: { soft: '#cbd5e1' },
+          },
+          boxShadow: {
+            soft: '0 4px 20px -2px rgba(15, 68, 130, 0.08)',
+            floating: '0 20px 25px -5px rgba(15, 68, 130, 0.2)',
+            /* М’яка глибина для карток чату (мінімалізм без жорстких рамок) */
+            'card-soft': '0 10px 25px -5px rgba(0, 0, 0, 0.05)',
+          },
+        },
+      },
+    }
+  </script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col bg-surface-main">
+  <div id="marketingai-toast-host" class="fixed top-4 right-4 z-[200] flex flex-col gap-2 w-[min(380px,calc(100vw-2rem))] pointer-events-none" aria-live="polite"></div>
+  <!-- Навігація: активний пункт — нижня лінія (як футер), без «плашки» -->
+  <nav class="marketingai-nav bg-white border-b border-line-soft shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        {% with url_name=request.resolver_match.url_name|default:'' %}
+        <a href="{% url 'home' %}" class="flex items-center gap-2">
+          <span class="w-10 h-10 rounded-lg bg-brand-deep flex items-center justify-center text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+          </span>
+          <span class="font-semibold text-brand-deep">MarketingAI</span>
+        </a>
+        <div class="hidden md:flex items-center gap-6">
+          <a href="{% url 'home' %}#possibilities" class="text-sm text-neutral-text hover:text-brand-deep">Можливості</a>
+          <a href="{% url 'home' %}#reviews" class="text-sm text-neutral-text hover:text-brand-deep">Відгуки</a>
+          <a href="#" class="text-sm text-neutral-text hover:text-brand-deep">Блог</a>
+          <a href="{% url 'pricing' %}" class="text-sm rounded-lg px-3 py-1.5 transition-colors {% if url_name == 'pricing' %}font-semibold text-brand-deep bg-surface-card/60 ring-1 ring-line-soft{% else %}text-neutral-text hover:text-brand-deep{% endif %}" {% if url_name == 'pricing' %}aria-current="page"{% endif %}>Ціни</a>
+          <a href="{% url 'contacts' %}" class="text-sm rounded-lg px-3 py-1.5 transition-colors {% if url_name == 'contacts' %}font-semibold text-white bg-interactive ring-1 ring-interactive shadow-sm{% else %}text-neutral-text hover:text-brand-deep{% endif %}" {% if url_name == 'contacts' %}aria-current="page"{% endif %}>Контакти</a>
+        </div>
+        <div class="flex items-center gap-2 sm:gap-3">
+          {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="text-sm rounded-lg px-2.5 sm:px-3 py-1.5 transition-colors whitespace-nowrap {% if url_name == 'dashboard' %}font-semibold text-brand-deep bg-surface-card/60 ring-1 ring-line-soft{% else %}text-neutral-text hover:text-brand-deep{% endif %}" {% if url_name == 'dashboard' %}aria-current="page"{% endif %}>Дашборд</a>
+            <a href="{% url 'chat' %}" class="text-sm rounded-lg px-2.5 sm:px-3 py-1.5 transition-colors whitespace-nowrap {% if url_name == 'chat' %}font-semibold text-brand-deep bg-surface-card/60 ring-1 ring-line-soft{% else %}text-neutral-text hover:text-brand-deep{% endif %}" {% if url_name == 'chat' %}aria-current="page"{% endif %}>Чат</a>
+            <a href="{% url 'billing' %}" class="text-sm rounded-lg px-2.5 sm:px-3 py-1.5 transition-colors whitespace-nowrap {% if url_name == 'billing' %}font-semibold text-brand-deep bg-surface-card/60 ring-1 ring-line-soft{% else %}text-neutral-text hover:text-brand-deep{% endif %}" {% if url_name == 'billing' %}aria-current="page"{% endif %}>Плани</a>
+            {# Блок акаунту: без «картки-кнопки» — лише розділювач і текст, кнопка лише «Вихід» #}
+            <div class="flex items-center gap-2 sm:gap-3 ml-1 sm:ml-2 border-l border-line-soft pl-3 sm:pl-4">
+              <span class="text-sm font-normal text-neutral-text max-w-[9rem] sm:max-w-[11rem] lg:max-w-[14rem] truncate" title="{% if user.last_name or user.first_name %}{{ user.last_name }} {{ user.first_name }}{% else %}{{ user.email|default:user.username }}{% endif %}">
+                {% if user.last_name or user.first_name %}
+                  {{ user.last_name }}{% if user.last_name and user.first_name %} {% endif %}{{ user.first_name }}
+                {% else %}
+                  {{ user.email|default:user.username }}
+                {% endif %}
+              </span>
+              <a href="{% url 'logout' %}" class="btn btn-sm border border-line-soft bg-white hover:!bg-slate-100 text-brand-deep shrink-0 transition-colors">Вихід</a>
+            </div>
+          {% else %}
+            <a href="{% url 'login' %}" class="ds-btn-cta rounded-full btn-sm md:btn-md border-0 px-5">Увійти</a>
+          {% endif %}
+        </div>
+        {% endwith %}
+      </div>
+    </div>
+  </nav>
+
+  <main class="flex-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Футер: BRAND-DEEP; заголовки — білий; посилання — білий 70% + border-b при hover; копірайт — NEUTRAL-TEXT -->
+  <footer class="bg-brand-deep text-white">
+    <div class="max-w-7xl mx-auto px-4 py-12">
+      <div class="grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-12 lg:gap-16">
+        <div class="md:col-span-1">
+          <a href="{% url 'home' %}" class="mb-4 flex items-center gap-2 text-white">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-brand-deep">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+            </span>
+            <span class="text-base font-semibold">MarketingAI</span>
+          </a>
+          <p class="max-w-md text-sm leading-relaxed text-white/70">
+            Інноваційні рішення для маркетингу на основі штучного інтелекту. Допомагаємо бізнесу зростати швидше та розумніше.
+          </p>
+        </div>
+        <div>
+          <h4 class="mb-4 text-xs font-bold uppercase tracking-wide text-white">Продукт</h4>
+          <ul class="space-y-3 text-sm">
+            <li><a href="{% url 'home' %}#possibilities" class="marketingai-footer-link">Можливості</a></li>
+            <li><a href="{% url 'home' %}#reviews" class="marketingai-footer-link">Відгуки</a></li>
+            <li><a href="{% url 'pricing' %}" class="marketingai-footer-link {% if request.resolver_match.url_name == 'pricing' %}" aria-current="page"{% else %}"{% endif %}>Ціни</a></li>
+            <li><a href="#" class="marketingai-footer-link">Блог</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="mb-4 text-xs font-bold uppercase tracking-wide text-white">Компанія</h4>
+          <ul class="space-y-3 text-sm">
+            <li><a href="#" class="marketingai-footer-link">Про нас</a></li>
+            <li><a href="#" class="marketingai-footer-link">Кар'єра</a></li>
+            <li><a href="{% url 'contacts' %}" class="marketingai-footer-link {% if request.resolver_match.url_name == 'contacts' %}" aria-current="page"{% else %}"{% endif %}>Контакти</a></li>
+            <li><a href="#" class="marketingai-footer-link">Партнерам</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-10 border-t border-white/25 pt-6">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <p class="text-sm text-neutral-text">© 2026 MarketingAI. Всі права захищені.</p>
+          <div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <a href="#" class="text-sm font-medium text-white transition-opacity hover:opacity-90">Умови використання</a>
+            <a href="#" class="text-sm font-medium text-white transition-opacity hover:opacity-90">Конфіденційність</a>
+            <a href="#" class="text-sm font-medium text-white transition-opacity hover:opacity-90">Cookies</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="{% static 'js/toasts.js' %}"></script>
+  {% if messages %}
+  <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!window.marketingaiToast) return;
+    {% for message in messages %}
+    window.marketingaiToast({
+      message: "{{ message|escapejs }}",
+      type: {% if message.tags == 'error' %}'error'{% elif message.tags == 'warning' %}'warning'{% elif message.tags == 'success' %}'success'{% else %}'info'{% endif %}
+    });
+    {% endfor %}
+  });
+  </script>
+  {% endif %}
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

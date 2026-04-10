@@ -1,0 +1,243 @@
+{
+  "name": "MarketingAI — етапи та питання",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "marketingai-chat",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "w1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "w1hook"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Вміст для вузла Code «Підготовка сценарію» (копія в workflow JSON).\n * Вхід: body вебхука від Django.\n */\nconst b = $input.first().json.body || $input.first().json;\nconst stageIndex = Math.min(Math.max(parseInt(b.stage_index, 10) || 0, 0), 8);\nconst qIndex = Math.max(parseInt(b.question_index, 10) || 0, 0);\nconst event = b.event || 'user_message';\nconst history = Array.isArray(b.history) ? b.history : [];\n\nconst STAGES = [\n  { title: 'Інструкція', intro: 'Ми пройдемо 9 етапів маркетингової діагностики. На кожному етапі я поставлю кілька питань; відповідайте чесно — так зможу дати точніші рекомендації. Можна робити паузу: історія чату зберігається, після відновлення інтернету продовжите з того ж місця.', questions: ['Коротко опишіть ваш бізнес за 1–2 речення.', 'Яка головна ціль маркетингу на найближчі 3 місяці?'] },\n  { title: 'Продукт', intro: '', questions: ['Що саме ви продаєте (продукт/послуга/підписка)?', 'У чому головна вигода для клієнта?'] },\n  { title: 'УТП', intro: '', questions: ['Чим ви принципово відрізняєтесь від конкурентів?', 'Чи можете назвати цифру або факт, що це підтверджує?'] },\n  { title: 'Цільова аудиторія', intro: '', questions: ['Хто ваш ідеальний клієнт (роль, розмір бізнесу, гео)?', 'Які болі або завдання він намагається закрити вашим продуктом?'] },\n  { title: 'Лінії просування', intro: '', questions: ['Які канали зараз використовуєте (реклама, соцмережі, email, партнерки)?', 'Який канал дає найбільше заявок або продажів?'] },\n  { title: 'Успішні дії', intro: '', questions: ['Що з маркетингу спрацювало найкраще за останній рік?', 'Що ви вже пробували і від чого відмовились?'] },\n  { title: 'Воронки', intro: '', questions: ['Як виглядає шлях клієнта від першого контакту до оплати?', 'Де найбільше «просідання» конверсії?'] },\n  { title: 'Стратегія та запуск', intro: '', questions: ['Який бюджет готові виділяти на маркетинг на місяць?', 'Які 2–3 пріоритетні гіпотези хочете перевірити першими?'] },\n  { title: 'Аналіз', intro: '', questions: ['Які метрики відстежуєте зараз (CRM, аналітика)?', 'Що хотіли б бачити в щотижневому звіті по маркетингу?'] },\n];\n\nconst meta = STAGES[stageIndex] || STAGES[0];\n\nif (event === 'chat_opened') {\n  const welcome = `Вітаю! ${meta.intro}\\n\\n**Етап ${stageIndex + 1}: ${meta.title}**\\n\\nПерше питання: ${meta.questions[0]}`;\n  return [{\n    json: {\n      skip_llm: true,\n      django_payload: {\n        conversation_id: b.conversation_id,\n        text: welcome,\n        sender: 'ai',\n        stage_index: stageIndex,\n        question_index: 0,\n      },\n    },\n  }];\n}\n\nconst qi = Math.min(qIndex, meta.questions.length - 1);\nconst currentQ = meta.questions[qi];\nconst histText = history.slice(-16).map((h) => `${h.sender}: ${h.text}`).join('\\n');\nconst system = `Ти маркетинговий AI-асистент MarketingAI. Етап: «${meta.title}». Поточне фокус-питання: «${currentQ}». Допоможи користувачу сформулювати відповідь або дай коротку рекомендацію. Українською, 2–6 речень, без води. Якщо відповідь повна — коротко підсумуй і запропонуй наступний крок.`;\nconst userContent = `Історія (останні повідомлення):\\n${histText}\\n\\nОстаннє від користувача: ${b.text || ''}`;\n\nreturn [{\n  json: {\n    skip_llm: false,\n    openai_body: {\n      model: 'gpt-4o-mini',\n      messages: [\n        { role: 'system', content: system },\n        { role: 'user', content: userContent },\n      ],\n      temperature: 0.65,\n    },\n    ctx: {\n      conversation_id: b.conversation_id,\n      stageIndex,\n      qIndex: qi,\n      meta,\n    },\n  },\n}];\n"
+      },
+      "id": "p1",
+      "name": "PrepareScenario",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "loose"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.skip_llm }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      },
+      "id": "i1",
+      "name": "IfSkipLLM",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR-DJANGO/api/chat/response/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.django_payload) }}",
+        "options": {}
+      },
+      "id": "d1",
+      "name": "DjangoDirect",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        180
+      ],
+      "notesInFlow": true,
+      "notes": "Підставте URL Django"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.openai_body) }}",
+        "options": {}
+      },
+      "id": "o1",
+      "name": "OpenAIChat",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        420
+      ],
+      "notesInFlow": true,
+      "notes": "Header Auth: Authorization = Bearer sk-..."
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('PrepareScenario').first().json.ctx;\nconst res = $input.first().json;\nconst text = res.choices && res.choices[0] && res.choices[0].message && res.choices[0].message.content\n  ? res.choices[0].message.content\n  : 'Не вдалося згенерувати відповідь.';\nlet nextQ = ctx.qIndex + 1;\nlet nextStage = ctx.stageIndex;\nconst len = ctx.meta.questions.length;\nif (nextQ >= len) {\n  nextQ = 0;\n  nextStage = Math.min(ctx.stageIndex + 1, 8);\n}\nreturn [{\n  json: {\n    django_payload: {\n      conversation_id: ctx.conversation_id,\n      text: text,\n      sender: 'ai',\n      stage_index: nextStage,\n      question_index: nextQ,\n    },\n  },\n}];"
+      },
+      "id": "a1",
+      "name": "AfterOpenAI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://YOUR-DJANGO/api/chat/response/",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.django_payload) }}",
+        "options": {}
+      },
+      "id": "d2",
+      "name": "DjangoFromAI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        420
+      ],
+      "notesInFlow": true,
+      "notes": "Той самий ендпоінт"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "PrepareScenario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PrepareScenario": {
+      "main": [
+        [
+          {
+            "node": "IfSkipLLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IfSkipLLM": {
+      "main": [
+        [
+          {
+            "node": "DjangoDirect",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OpenAIChat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAIChat": {
+      "main": [
+        [
+          {
+            "node": "AfterOpenAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AfterOpenAI": {
+      "main": [
+        [
+          {
+            "node": "DjangoFromAI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": []
+}

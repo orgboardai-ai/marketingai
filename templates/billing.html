@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Плани та оплата — MarketingAI{% endblock %}
+{% block content %}
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <h1 class="text-2xl font-bold text-gray-900 mb-2">Плани та оплата</h1>
+    {% if user_plan %}
+      <p class="text-gray-600 mb-6">Ваш план: <strong>{{ user_plan.get_plan_display }}</strong>. Використано кроків: {{ user_plan.steps_used }} / {{ user_plan.steps_limit }}</p>
+    {% else %}
+      <p class="text-gray-600 mb-6">У вас безкоштовний план (3 кроки).</p>
+    {% endif %}
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="border-2 border-gray-200 rounded-xl p-6 text-center">
+        <p class="text-sm font-semibold text-gray-500 uppercase mb-2">Розробка продукту</p>
+        <p class="text-2xl font-bold text-gray-900 mb-4">Безкоштовно</p>
+        <p class="text-gray-600 text-sm mb-4">3 кроки</p>
+      </div>
+      <div class="border-2 border-blue-600 rounded-xl p-6 text-center bg-blue-50/30">
+        <p class="text-sm font-semibold text-blue-600 uppercase mb-2">4 кроки</p>
+        <p class="text-2xl font-bold text-gray-900 mb-4">300 євро</p>
+        <button type="button" data-plan="basic" class="btn btn-primary rounded-full checkout-btn">Купити план</button>
+      </div>
+      <div class="border-2 border-gray-200 rounded-xl p-6 text-center">
+        <p class="text-sm font-semibold text-gray-500 uppercase mb-2">9 кроків</p>
+        <p class="text-2xl font-bold text-gray-900 mb-4">990 євро</p>
+        <button type="button" data-plan="pro" class="btn btn-outline rounded-full checkout-btn">Купити план</button>
+      </div>
+    </div>
+    <p id="checkout-error" class="text-error mt-4 hidden"></p>
+  </div>
+
+  <!-- Форма редиректу на WayForPay створюється JS при кліку "Купити план" -->
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    document.querySelectorAll('.checkout-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const plan = this.getAttribute('data-plan');
+        const errEl = document.getElementById('checkout-error');
+        errEl.classList.add('hidden');
+        fetch('/api/billing/checkout/', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+          },
+          body: JSON.stringify({ plan: plan }),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.redirect_url && data.form_data) {
+              var form = document.getElementById('wayforpay-form');
+              if (!form) {
+                form = document.createElement('form');
+                form.id = 'wayforpay-form';
+                form.method = 'post';
+                form.action = data.redirect_url;
+                form.style.display = 'none';
+                document.body.appendChild(form);
+              }
+              form.action = data.redirect_url;
+              form.innerHTML = '';
+              for (var k in data.form_data) {
+                var inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = k;
+                inp.value = data.form_data[k];
+                form.appendChild(inp);
+              }
+              form.submit();
+            } else if (data.detail) {
+              errEl.textContent = data.detail;
+              errEl.classList.remove('hidden');
+            }
+          })
+          .catch(function () {
+            errEl.textContent = 'Помилка з\'єднання. Спробуйте пізніше.';
+            errEl.classList.remove('hidden');
+          });
+      });
+    });
+  </script>
+{% endblock %}

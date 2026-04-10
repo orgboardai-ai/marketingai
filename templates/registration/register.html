@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Реєстрація — MarketingAI{% endblock %}
+{% block content %}
+  <div class="max-w-md mx-auto px-4 py-16">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Реєстрація</h1>
+    {% include 'registration/includes/google_continue_button.html' with next_path='/dashboard/' hint='Той самий вхід, що й на сторінці «Увійти» — новий акаунт або існуючий' %}
+    <div class="relative mb-6">
+      <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
+      <div class="relative flex justify-center text-xs uppercase tracking-wide"><span class="bg-white px-2 text-gray-400">або логін і пароль</span></div>
+    </div>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="text-error text-sm">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <div>
+        <label class="label" for="id_username">Ім'я користувача</label>
+        <input type="text" name="username" id="id_username" class="input input-bordered w-full" maxlength="150" required autofocus>
+        {% if form.username.errors %}<p class="text-error text-sm">{{ form.username.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="label" for="id_password1">Пароль</label>
+        <input type="password" name="password1" id="id_password1" class="input input-bordered w-full" required>
+        {% if form.password1.errors %}<p class="text-error text-sm">{{ form.password1.errors.0 }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="label" for="id_password2">Підтвердження пароля</label>
+        <input type="password" name="password2" id="id_password2" class="input input-bordered w-full" required>
+        {% if form.password2.errors %}<p class="text-error text-sm">{{ form.password2.errors.0 }}</p>{% endif %}
+      </div>
+      <button type="submit" class="btn btn-primary rounded-full w-full">Зареєструватися</button>
+    </form>
+    <p class="mt-4 text-gray-600 text-sm">Вже є обліковий запис? <a href="{% url 'login' %}" class="link link-primary">Увійти</a></p>
+  </div>
+{% endblock %}

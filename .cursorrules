@@ -1,0 +1,7 @@
+Always read CONTEXT.md before making any changes.
+When adding a feature, update "Current Status" in CONTEXT.md.
+Write code comments in Ukrainian.
+Use environment variables for all secrets — never hardcode.
+Never break existing functionality — check dependencies before changing files.
+When creating HTML templates always extend base.html.
+Replicate the home page design exactly as described in CONTEXT.md.

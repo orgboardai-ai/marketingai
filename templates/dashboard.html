@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Дашборд — MarketingAI{% endblock %}
+{% block content %}
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <h1 class="text-2xl font-bold text-gray-900 mb-2">Вітаємо, {{ user.get_username }}!</h1>
+    <p class="text-gray-600 mb-8">Керуйте своїм маркетингом з AI-асистентом.</p>
+    <div class="grid md:grid-cols-2 gap-4">
+      <a href="{% url 'chat' %}" class="card bg-base-100 border border-gray-200 shadow-sm transition-colors hover:bg-base-200/30 p-6">
+        <h2 class="text-lg font-semibold mb-2">Чат з AI</h2>
+        <p class="text-gray-600 text-sm">Почніть розмову та отримайте план дій</p>
+      </a>
+      <a href="{% url 'billing' %}" class="card bg-base-100 border border-gray-200 shadow-sm transition-colors hover:bg-base-200/30 p-6">
+        <h2 class="text-lg font-semibold mb-2">Плани та оплата</h2>
+        <p class="text-gray-600 text-sm">Перегляньте план та оновіть підписку</p>
+      </a>
+    </div>
+  </div>
+{% endblock %}

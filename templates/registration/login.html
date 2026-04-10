@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Увійти — MarketingAI{% endblock %}
+{% block content %}
+  <div class="max-w-md mx-auto px-4 py-16">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Увійти</h1>
+    {% include 'registration/includes/google_continue_button.html' with next_path='/dashboard/' hint='Один вхід — профіль і календар для розкладу' %}
+    <div class="relative mb-6">
+      <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
+      <div class="relative flex justify-center text-xs uppercase tracking-wide"><span class="bg-white px-2 text-gray-400">або email</span></div>
+    </div>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="text-error text-sm">{{ form.non_field_errors }}</div>
+      {% endif %}
+      <div>
+        <label class="label" for="id_username">Логін</label>
+        <input type="text" name="username" id="id_username" class="input input-bordered w-full" required autofocus>
+      </div>
+      <div>
+        <label class="label" for="id_password">Пароль</label>
+        <input type="password" name="password" id="id_password" class="input input-bordered w-full" required>
+      </div>
+      <button type="submit" class="btn btn-primary rounded-full w-full">Увійти</button>
+    </form>
+    <p class="mt-4 text-gray-600 text-sm">Немає облікового запису? <a href="{% url 'register' %}" class="link link-primary">Зареєструватися</a></p>
+  </div>
+{% endblock %}

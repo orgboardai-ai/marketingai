@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Ціни — MarketingAI{% endblock %}
+{% block content %}
+  <section class="bg-white py-16">
+    <div class="max-w-5xl mx-auto px-4">
+      <h1 class="text-3xl font-bold text-center text-gray-900 mb-4">Ціни</h1>
+      <p class="text-center text-gray-600 mb-12">Одноразова оплата. Без підписок.</p>
+      <div class="grid md:grid-cols-3 gap-6">
+        {# План free — 3 кроки #}
+        <div class="relative rounded-xl p-8 text-center transition-shadow {% if user_plan and user_plan.plan == 'free' %}ring-2 ring-emerald-500 border-2 border-emerald-500 bg-emerald-50/40 shadow-lg scale-[1.02]{% else %}border-2 border-gray-200{% endif %}">
+          {% if user_plan and user_plan.plan == 'free' %}
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow">Ваш поточний план</span>
+          {% endif %}
+          <p class="text-sm font-semibold text-gray-500 uppercase mb-2">Розробка продукту</p>
+          <p class="text-3xl font-bold text-gray-900 mb-4">Безкоштовно</p>
+          <p class="text-gray-600 text-sm mb-6">3 кроки</p>
+          {% if not user_plan or user_plan.plan != 'free' %}
+            <a href="{% url 'register' %}" class="btn btn-outline rounded-full">Обрати</a>
+          {% endif %}
+        </div>
+        {# План basic — 4 кроки #}
+        <div class="relative rounded-xl p-8 text-center transition-shadow {% if user_plan and user_plan.plan == 'basic' %}ring-2 ring-blue-600 border-2 border-blue-600 bg-blue-50/50 shadow-xl scale-[1.03] z-10{% else %}border-2 border-blue-600 bg-blue-50/30{% endif %}">
+          {% if user_plan and user_plan.plan == 'basic' %}
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-700 text-white text-xs font-semibold px-3 py-1 rounded-full shadow z-20">Ваш поточний план</span>
+          {% else %}
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-3 py-1 rounded-full">Популярний</span>
+          {% endif %}
+          <p class="text-sm font-semibold text-blue-600 uppercase mb-2">4 кроки</p>
+          <p class="text-3xl font-bold text-gray-900 mb-4">300 євро</p>
+          <p class="text-gray-600 text-sm mb-6">Одноразово</p>
+          {% if not user_plan or user_plan.plan != 'basic' %}
+            <a href="{% url 'register' %}" class="btn btn-primary rounded-full">Купити план</a>
+          {% endif %}
+        </div>
+        {# План pro — 9 кроків #}
+        <div class="relative rounded-xl p-8 text-center transition-shadow {% if user_plan and user_plan.plan == 'pro' %}ring-2 ring-violet-600 border-2 border-violet-600 bg-violet-50/40 shadow-lg scale-[1.02]{% else %}border-2 border-gray-200{% endif %}">
+          {% if user_plan and user_plan.plan == 'pro' %}
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-violet-700 text-white text-xs font-semibold px-3 py-1 rounded-full shadow">Ваш поточний план</span>
+          {% endif %}
+          <p class="text-sm font-semibold text-gray-500 uppercase mb-2">9 кроків</p>
+          <p class="text-3xl font-bold text-gray-900 mb-4">990 євро</p>
+          <p class="text-gray-600 text-sm mb-6">Одноразово</p>
+          {% if not user_plan or user_plan.plan != 'pro' %}
+            <a href="{% url 'register' %}" class="btn btn-outline rounded-full">Купити план</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}

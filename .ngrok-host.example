@@ -1,0 +1,3 @@
+# Скопіюйте у файл `.ngrok-host` (без цього префікса #) один рядок — лише домен з ngrok.
+# Приклад (підставте свій з `ngrok http 8000`):
+# your-subdomain.ngrok-free.dev

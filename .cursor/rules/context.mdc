@@ -1,0 +1,13 @@
+---
+description: Read project context before making changes
+alwaysApply: true
+---
+
+# MarketingAI Project
+
+- Always read **CONTEXT.md** in the project root before making any changes.
+- When adding a feature, update the "Current Status" section in CONTEXT.md.
+- Write code comments in Ukrainian.
+- Use environment variables for all secrets — never hardcode.
+- When creating HTML templates, always extend **base.html**.
+- Replicate the home page design exactly as described in CONTEXT.md (colors, sections, footer).
